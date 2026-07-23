@@ -1,6 +1,6 @@
 # SAGE-Path
 
-Minimal reference implementation of **SAGE-Path** (Self-reflective Agentic Guideline-grounded Engine for text-based pathology diagnostic assistance), accompanying the manuscript *“Guideline-grounded agentic AI enables reliable report-level diagnostic reasoning in oncologic pathology.”*
+SAGE-Path is a compact pathology diagnostic assistant that combines hybrid retrieval, evidence reranking, answer generation, and iterative self-review.
 
 This repository contains only the full inference workflow used for SAGE-Path:
 
@@ -20,24 +20,16 @@ Reflection without retrieved passages
 Re-retrieval and revision when needed
 ```
 
-Retrieval and reflection are always enabled. Benchmarking, ablation settings, evaluation metrics, statistical analyses, reader-study code, and figure-generation scripts are intentionally excluded.
+## Prompt customization
 
-## Included task prompts
-
-Task-specific inference and reflection prompts are transcribed from Supplementary Table 3:
-
-- rare-tumour differential diagnosis;
-- metastatic primary-site inference; and
-- complex pathology diagnosis with follow-up testing recommendations.
-
-The implementation is shared as a concise methodological reference, not as a complete reproduction package for every numerical result in the manuscript.
+`prompts.py` contains example prompts for one pathology diagnosis workflow. Edit these templates to match the intended diagnostic task, output format and language.
 
 ## Repository layout
 
 ```text
 SAGE-Path/
 ├── sage_path.py              # retrieval, reranking, generation, and reflection
-├── prompts.py                # task prompts from Supplementary Table 3
+├── prompts.py                # task prompt examples
 ├── run_example.py            # one-case command-line example
 ├── examples/
 │   ├── demo_case.json        # synthetic placeholder case
@@ -79,10 +71,7 @@ EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
 Never commit `.env` or an API key. Keys that were previously embedded in research scripts should be revoked before the repository is made public.
 
 ## Knowledge-base availability
-
-The WHO-derived knowledge base used in the study was constructed from 11 volumes of the fifth edition of the *WHO Classification of Tumours*. The processed study corpus comprised 1,811 tumour entities and 48,396 retrievable text units.
-
-The following study resources are **not included**:
+The knowledge base was derived from 11 volumes of the fifth edition of the *WHO Classification of Tumours*. The following files are not included because they contain or encode copyrighted WHO content:
 
 ```text
 data/11_who_chunk.json
@@ -91,9 +80,7 @@ data/faiss_index.index
 data/faiss_index_meta.json
 ```
 
-They were derived from copyrighted WHO publications and may contain, reproduce, encode, or provide structured access to licensed content. They are therefore not redistributed through this repository and are not available from the authors for onward redistribution.
-
-Users wishing to run retrieval must obtain lawful access to appropriate source material and prepare compatible local resources in accordance with the applicable licence terms. The source code license does not grant rights to the *WHO Classification of Tumours* or any other third-party material. See [`data/README.md`](data/README.md) for the expected layout and schema.
+Users must obtain lawful access to the source materials and prepare compatible local resources. The repository license applies only to the source code and does not cover WHO or other third-party content. See data/README.md for the expected file layout.
 
 ## Running one case
 
@@ -150,17 +137,8 @@ python run_example.py \
 
 - Only de-identified reports should be submitted to an external model API.
 - The repository contains no patient data, model outputs from study cases, credentials, or personal filesystem paths.
-- Public result serialization excludes the report, retrieved guideline passages, and detailed reflection feedback by default.
 - The synthetic example is not derived from a real patient.
-- Review the data-processing agreement and privacy terms of the selected API provider before processing clinical text.
 
-## Reproducibility scope
-
-This repository reproduces the software logic of the SAGE-Path inference workflow. Exact study results also depend on restricted clinical data, the frozen WHO-derived corpus and indexes, model-service versions, prompts, and inference-time behavior. Consequently, this repository should not be interpreted as a standalone package for reproducing every value reported in the manuscript.
-
-## Research-use disclaimer
-
-This software is provided for research and methodological review only. It is not a medical device and must not be used for clinical diagnosis, treatment selection, or patient management without independent review by qualified professionals and all required regulatory, ethical, and institutional approvals.
 
 ## License
 
