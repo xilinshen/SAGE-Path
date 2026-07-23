@@ -1,40 +1,88 @@
-"""Task prompts used by the public SAGE-Path reference implementation.
+"""Example prompts for a pathology diagnosis workflow."""
 
-The task-specific prompts below are transcribed from Supplementary Table 3
-of the accompanying manuscript. Benchmark, sensitivity-analysis, and
-evaluation prompts are intentionally excluded.
+TRANSLATION_PROMPT = """Translate the pathology report into literal English.
+Do not interpret, summarize, paraphrase, or add medical information. Preserve
+its structure and punctuation. Translate (+) as positive and (-) as negative.
+
+Pathology report:
+{report}
 """
 
-PROMPTS = {'translation': 'Please translate the following Chinese pathological report into English '
-                'word-for-word without adding any interpretation, explanation, or formatting '
-                'changes. Do not polish or paraphrase the text. Do not add any professional '
-                'terminology beyond what appears in the original. Keep the original format, '
-                'punctuation, and structure exactly the same. Translate (−) and (+) using '
-                '“negative” and “positive” respectively. Your translation should be simple, '
-                "faithful, and literal, only converting Chinese to English: {case['report']}",
- 'rare_tumor_inference': 'You are tasked with making a differential diagnosis based on the '
-                         'provided pathology report. Please read the details of the pathology '
-                         'report (which may include macroscopic findings, microscopic findings, '
-                         'and immunohistochemical results) and determine the most likely tumor '
-                         'type.\n'
-                         '\n'
-                         'Input:\n'
-                         'Pathology Report: {report}\n'
-                         '\n'
-                         'Relevant WHO Clinical Guideline ordered by relevance:\n'
-                         '{who_guideline_content}\n'
-                         '\n'
-                         'Task: Based on the pathology report, identify the most likely tumor '
-                         'type. Then provide a brief reasoning (1-2 sentences) explaining why this '
-                         'diagnosis is most consistent with the findings in the report.\n'
-                         '\n'
-                         'Respond in the following format:\n'
-                         'Diagnosis: [Most likely tumor type, response the disease name in '
-                         'Chinese]\n'
-                         'Reasoning: [Concise explanation of how the findings support this '
-                         'diagnosis]',
- 'rare_tumor_reflection': 'You are tasked with evaluating the quality of a diagnosis made by the '
-                          "model. Given the pathology report, the model's diagnosis, and the "
+RETRIEVAL_INSTRUCTION = (
+    "Retrieve diagnostic criteria, histopathological features, "
+    "immunophenotypic findings, molecular alterations, and relevant "
+    "differential diagnoses for the most likely tumor type."
+)
+
+DIAGNOSIS_PROMPT = """You are assisting with a pathology diagnosis task.
+Use only the supplied pathology report and retrieved reference passages. Do not
+invent clinical, morphologic, immunohistochemical, or molecular findings.
+
+Pathology report:
+{report}
+
+Retrieved reference passages:
+{guideline}
+
+Identify the most likely diagnosis and provide a concise explanation.
+
+Return exactly:
+Diagnosis: [disease name]
+Reasoning: [concise explanation]
+"""
+
+REFLECTION_PROMPT = """Review the proposed pathology diagnosis using only the supplied case.
+Check consistency with the anatomical site, morphology, immunohistochemistry,
+molecular findings, and treatment history when available. Do not invent findings.
+
+Pathology report:
+{report}
+
+Proposed diagnosis:
+{diagnosis}
+
+Proposed reasoning:
+{reasoning}
+
+Return exactly:
+Evaluation: [PASS or NEEDS_IMPROVEMENT]
+Reasoning: [brief explanation]
+"""
+
+REVISION_CONTEXT = """
+
+Revision context:
+Previous answer:
+{previous_answer}
+
+Reflection feedback:
+{feedback}
+
+Revise the answer only where necessary. Keep the required output format, use
+only the supplied case and retrieved passages, and avoid unsupported assumptions.
+"""
+
+RELEVANCE_PROMPT = """You are given a query and candidate passages. Determine which passages are topically relevant.
+
+Query:
+{query}
+
+Passages:
+{passages}
+
+Only output the numbers of relevant passages, separated by commas. Do not output any other text.
+"""
+
+RERANK_PROMPT = """You are given a query and relevant passages. Rank the passages from most to least relevant.
+
+Query:
+{query}
+
+Passages:
+{passages}
+
+Only output the passage numbers in ranked order, separated by commas. Do not output any other text.
+"""                          "model. Given the pathology report, the model's diagnosis, and the "
                           "model's reasoning, you need to determine whether the diagnosis is "
                           'reasonable and consistent with the findings in the report.\n'
                           '\n'
