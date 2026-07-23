@@ -2,10 +2,7 @@
 """Privacy-conscious pathology RAG agent.
 
 This public version keeps the original hybrid retrieval and self-review workflow,
-while removing secrets, personal paths, notebook outputs, and raw case logging.
-
-Important: reports are sent to a third-party API after best-effort redaction.
-Review the redacted text and your organization's data policy before real use.
+while removing secrets and personal paths.
 """
 
 from __future__ import annotations
