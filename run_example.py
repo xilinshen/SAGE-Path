@@ -1,64 +1,64 @@
-"""Run one de-identified case through the full SAGE-Path workflow."""
+#!/usr/bin/env python3
+"""Run the diagnosis pipeline on one JSON object or a list of objects."""
 
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
-from dotenv import load_dotenv
-
-from sage_path import SUPPORTED_TASKS, create_pipeline
+from rag_agent import create_pipeline
 
 
-def parse_args() -> argparse.Namespace:
+def load_cases(path: Path) -> list[dict[str, Any]]:
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    if isinstance(data, dict):
+        return [data]
+    if isinstance(data, list) and all(isinstance(item, dict) for item in data):
+        return data
+    raise ValueError("Input must be a JSON object or a list of JSON objects.")
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--case",
-        default="examples/demo_case.json",
-        help="JSON file containing report, task, and optional fields.",
-    )
-    parser.add_argument(
-        "--data-dir",
-        default="data",
-        help="Directory containing the locally prepared knowledge-base files.",
-    )
-    parser.add_argument(
-        "--output",
-        help="Optional JSON output path. Raw reports and guideline text are never saved.",
-    )
-    return parser.parse_args()
+    parser.add_argument("--cases", type=Path, required=True)
+    parser.add_argument("--data-dir", type=Path, default=Path("data"))
+    parser.add_argument("--output", type=Path, default=Path("outputs/results.json"))
+    parser.add_argument("--disable-redaction", action="store_true")
+    return parser
 
 
 def main() -> None:
-    load_dotenv()
-    args = parse_args()
-    case_path = Path(args.case)
-    case = json.loads(case_path.read_text(encoding="utf-8"))
+    args = build_parser().parse_args()
+    pipeline = create_pipeline(
+        args.data_dir,
+        redact_reports=not args.disable_redaction,
+    )
 
-    task = case.get("task", "rare_tumor")
-    if task not in SUPPORTED_TASKS:
-        raise ValueError(f"Unsupported task: {task}")
-    report = case.get("report", "")
-    fields = case.get("fields", {})
+    results: list[dict[str, Any]] = []
+    for position, case in enumerate(load_cases(args.cases), start=1):
+        case_id = str(case.get("case_id") or f"case-{position:04d}")
+        report = str(case.get("report") or "")
+        print(f"Processing {case_id}...")
+        try:
+            result = pipeline.run(report).to_dict()
+            result["case_id"] = case_id
+            results.append(result)
+        except Exception as exc:
+            results.append(
+                {
+                    "case_id": case_id,
+                    "error": type(exc).__name__,
+                    "message": str(exc),
+                }
+            )
 
-    pipeline = create_pipeline(args.data_dir)
-    result = pipeline.run(report, task=task, fields=fields)
-    public_result = result.to_public_dict()
-
-    print(result.answer)
-    print("\nReflection decisions:")
-    for record in result.reflection_history:
-        print(f"- round {record.iteration}: {record.evaluation}")
-
-    if args.output:
-        output_path = Path(args.output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(
-            json.dumps(public_result, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        print(f"\nSaved privacy-minimized output to: {output_path}")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with args.output.open("w", encoding="utf-8") as handle:
+        json.dump(results, handle, ensure_ascii=False, indent=2)
+    print(f"Saved {len(results)} result(s) to {args.output}")
 
 
 if __name__ == "__main__":
